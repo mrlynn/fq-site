@@ -197,6 +197,9 @@
   figure { margin: 0; }
   figcaption { font-size: 0.95rem; color: var(--muted); margin-top: 1rem; max-width: 22rem; }
 
+  .macwidgets { display: grid; grid-template-columns: repeat(2, minmax(0, 360px)); gap: clamp(1.5rem, 4vw, 3rem); margin-top: 3rem; }
+  .macwidgets img { border-radius: 1.4rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); }
+  @media (max-width: 52rem) { .macwidgets { grid-template-columns: minmax(0, 360px); } }
   .phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1rem, 3vw, 2.5rem); margin-top: 3rem; align-items: start; }
   .phones figure:nth-child(2) { margin-top: 4rem; }
   .phones figure:nth-child(3) { margin-top: 8rem; }
@@ -307,6 +310,16 @@
   <div class="wrap">
     <h2>Widgets for the desktop and the Home Screen.</h2>
     <p>Small and medium widgets on the Mac desktop and the iPhone Home Screen, plus three Lock Screen sizes on iPhone. The medium widget sets the quarter, the half, and the year side by side, because they start on different days even when they end together.</p>
+    <div class="macwidgets">
+      <figure>
+        <img src="img/mac-widget.webp" width="720" height="360" loading="lazy" alt="The medium Fiscal Quarter widget on the Mac: FY26-Q4, 82 days left, ends Dec 31, with green progress bars for the quarter, half, and year.">
+        <figcaption>The medium widget on the Mac desktop.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/mac-widget-desktop.webp" width="684" height="324" loading="lazy" alt="The same widget in monochrome, as macOS shows desktop widgets while an app window is in front.">
+        <figcaption>Behind your windows, macOS turns desktop widgets monochrome. They come back to color when you click the desktop.</figcaption>
+      </figure>
+    </div>
     <div class="phones">
       <figure>
         <div class="phone crop"><img src="img/ios-home-1.webp" width="720" height="1075" loading="lazy" alt="An iPhone Home Screen with a medium Fiscal Quarter widget: FY26-Q4, 82 days left, and bars for the quarter, half, and year."></div>
