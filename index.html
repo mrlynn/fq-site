@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fiscal Quarter</title>
+<meta name="description" content="The fiscal quarter in your Mac menu bar, on your desktop, and on your iPhone: days left, countdowns, your customers' calendars, and widgets you can style.">
+<meta property="og:title" content="Fiscal Quarter">
+<meta property="og:description" content="The fiscal quarter in your Mac menu bar, on your desktop, and on your iPhone.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fq.mlynn.dev/">
+<meta name="theme-color" content="#EEF1EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C1714" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #EEF1EC;
+    --paper-deep: #E2E8E2;
+    --ink: #0E2A23;
+    --muted: #56655F;
+    --rule: #C9D3CC;
+    --green: #10B981;
+    --green-ink: #0B7F5A;
+    --future: #CDE9DC;
+    --later: #D6DDD8;
+    --past: #7C8B85;
+    --amber: #B45F06;
+    --bar: rgba(14, 42, 35, 0.86);
+    --shadow: 0 30px 60px -30px rgba(14, 42, 35, 0.45);
+    --measure: 34rem;
+    --gutter: clamp(1rem, 4vw, 3rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0C1714;
+      --paper-deep: #12211D;
+      --ink: #E4EEE9;
+      --muted: #93A59E;
+      --rule: #23352F;
+      --green-ink: #34D399;
+      --future: #134535;
+      --later: #1E2E29;
+      --past: #6B7E77;
+      --amber: #F59E0B;
+      --bar: rgba(4, 12, 10, 0.9);
+      --shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.8);
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Schibsted Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+  }
+  img { display: block; max-width: 100%; height: auto; }
+  a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 3px solid var(--green); outline-offset: 3px; border-radius: 4px; }
+  p { margin: 0 0 1em; max-width: var(--measure); }
+  h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.025em; line-height: 1.05; }
+  h2 { font-size: clamp(2rem, 4.2vw, 3.25rem); max-width: 18ch; margin-bottom: 0.6em; }
+  .wrap { max-width: 76rem; margin: 0 auto; padding: 0 var(--gutter); }
+  /* Grid columns may shrink below their content, so wide code scrolls inside its own box. */
+  .wrap > * { min-width: 0; }
+  /* Figures line up only where numbers are the content. In this face, tabular figures also widen punctuation. */
+  .qid, .big, .menubar .fq, .ends .count, .terminal { font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+
+  /* The menu bar the hero hangs from */
+  .menubar {
+    background: var(--bar);
+    color: #fff;
+    font-size: 0.875rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+  }
+  .menubar .wrap { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+  .menubar .app { font-weight: 700; }
+  .menubar .items { display: flex; gap: 1.1rem; align-items: center; color: rgba(255, 255, 255, 0.82); }
+  .menubar .fq {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.15rem 0.6rem;
+    border-radius: 0.4rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .menubar .clock { white-space: nowrap; }
+  @media (max-width: 40rem) { .menubar .extra { display: none; } }
+
+  /* Hero */
+  .hero { padding: clamp(2.5rem, 6vw, 4.5rem) 0 2rem; }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(2rem, 5vw, 5rem); align-items: start; }
+  .hero-text { padding-top: 0.5rem; container-type: inline-size; min-width: 0; }
+  .today-line { font-size: 1.125rem; color: var(--muted); margin-bottom: 0.25rem; }
+  .qid {
+    font-size: min(24cqi, 11.5rem);
+    letter-spacing: -0.055em;
+    line-height: 0.88;
+    margin: 0 0 0.25em -0.04em;
+    white-space: nowrap;
+  }
+  .lede { font-size: clamp(1.375rem, 2.6vw, 1.875rem); line-height: 1.25; font-weight: 500; max-width: 22ch; margin-bottom: 0.9em; }
+  .lede .left.soon { color: var(--amber); }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin: 1.75rem 0 0.75rem; }
+  .button {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--ink); color: var(--paper);
+    text-decoration: none; font-weight: 700;
+    padding: 0.85rem 1.35rem; border-radius: 999px;
+  }
+  .button:hover { background: var(--green-ink); text-decoration: none; }
+  .button.quiet { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--rule); }
+  .button.quiet:hover { box-shadow: inset 0 0 0 1.5px var(--ink); background: transparent; }
+  .fine { font-size: 0.9rem; color: var(--muted); }
+  .panel-shot { width: min(374px, 80vw); margin-top: -0.75rem; }
+  @media (max-width: 60rem) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .panel-shot { margin: 0 auto; }
+  }
+
+  /* The year line: the app's own picture, drawn for today */
+  .year { padding: 2.5rem 0 1rem; }
+  .yearline { display: flex; gap: 1.6%; align-items: flex-end; }
+  .quarter { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quarter .qname { font-size: 0.95rem; font-weight: 700; color: var(--muted); text-align: center; }
+  .quarter.now .qname { color: var(--green-ink); }
+  .months { display: flex; gap: 0.35rem; }
+  .month { display: flex; flex-direction: column; gap: 0.5rem; }
+  .month .bar { position: relative; height: 0.9rem; border-radius: 999px; background: var(--later); overflow: visible; }
+  .quarter.now .month .bar { background: var(--future); }
+  .month .fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--past); transform-origin: left center; }
+  .month .mname { font-size: 0.85rem; color: var(--muted); text-align: center; }
+  .month.now .mname { color: var(--ink); font-weight: 700; }
+  .ring {
+    position: absolute; top: 50%; width: 1.75rem; height: 1.75rem; margin: -0.875rem 0 0 -0.875rem;
+    border-radius: 50%; background: var(--paper); border: 0.3rem solid var(--green);
+  }
+  .yearcap { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; font-size: 1rem; color: var(--muted); }
+  @media (prefers-reduced-motion: no-preference) {
+    .month .fill { animation: fill 0.5s cubic-bezier(.3,.7,.3,1) both; animation-delay: calc(var(--i) * 70ms + 200ms); }
+    .ring { animation: ring 0.45s cubic-bezier(.3,1.6,.5,1) both; animation-delay: calc(var(--i) * 70ms + 650ms); }
+  }
+  @keyframes fill { from { transform: scaleX(0); } }
+  @keyframes ring { from { transform: scale(0); opacity: 0; } }
+  @media (max-width: 40rem) {
+    .months { gap: 0.2rem; }
+    .month .mname { font-size: 0.7rem; }
+    .quarter .qname { font-size: 0.8rem; }
+    .ring { width: 1.25rem; height: 1.25rem; margin: -0.625rem 0 0 -0.625rem; border-width: 0.22rem; }
+  }
+
+  section { padding: clamp(4rem, 10vw, 7.5rem) 0 0; }
+
+  /* Countdowns */
+  .countdown .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
+  .units { display: inline-flex; padding: 0.3rem; gap: 0.25rem; border-radius: 999px; background: var(--paper-deep); margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .units button {
+    font: inherit; font-size: 1rem; font-weight: 500; color: var(--muted);
+    border: 0; background: transparent; padding: 0.45rem 1rem; border-radius: 999px; cursor: pointer;
+  }
+  .units button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .big { font-size: clamp(5rem, 13vw, 9rem); font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; }
+  .big-unit { font-size: 1.5rem; font-weight: 500; margin-top: 0.4rem; }
+  .ends { list-style: none; padding: 0; margin: 2rem 0 0; border-top: 1.5px solid var(--ink); }
+  .ends li { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--rule); }
+  .ends .when { color: var(--muted); font-size: 0.95rem; }
+  .ends .count { font-weight: 700; }
+  .ends .soon { color: var(--amber); }
+  @media (max-width: 52rem) { .countdown .wrap { grid-template-columns: 1fr; } }
+
+  /* Phones */
+  .phone { border-radius: 2.6rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); background: #000; overflow: hidden; }
+  .phone img { width: 100%; }
+  /* The top of the screen, where the widgets are, fading out where the screenshot was cut. */
+  .phone.crop { border-radius: 2.6rem 2.6rem 0 0; box-shadow: none; background: transparent;
+    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent); mask-image: linear-gradient(to bottom, #000 78%, transparent); }
+  figure { margin: 0; }
+  figcaption { font-size: 0.95rem; color: var(--muted); margin-top: 1rem; max-width: 22rem; }
+
+  .phones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1rem, 3vw, 2.5rem); margin-top: 3rem; align-items: start; }
+  .phones figure:nth-child(2) { margin-top: 4rem; }
+  .phones figure:nth-child(3) { margin-top: 8rem; }
+  @media (max-width: 52rem) {
+    .phones { grid-template-columns: repeat(3, 78%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1rem; }
+    .phones figure { scroll-snap-align: start; }
+    .phones figure:nth-child(n) { margin-top: 0; }
+  }
+
+  /* Other calendars */
+  .calendars .wrap { display: grid; grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: center; }
+  .terminal {
+    background: #0E1A17; color: #DCE7E2; border-radius: 0.9rem; padding: 1.25rem 1.4rem;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86rem; line-height: 1.7;
+    overflow-x: auto; margin: 1.75rem 0 0;
+  }
+  .terminal .cmd { color: #fff; }
+  .terminal .cmd::before { content: "$ "; color: #6B8F82; }
+  .terminal .gap { display: block; height: 0.85rem; }
+  @media (max-width: 52rem) { .calendars .wrap { grid-template-columns: 1fr; } .calendars .phone { max-width: 20rem; } }
+
+  /* Appearance */
+  .looks { display: grid; grid-template-columns: 1.05fr 1fr 1fr; gap: clamp(1rem, 3vw, 2.5rem); margin-top: 3rem; align-items: start; }
+  .mac-shot { filter: drop-shadow(0 24px 30px rgba(14, 42, 35, 0.3)); border-radius: 1rem; overflow: hidden; }
+  .options { columns: 2; column-gap: 3rem; padding: 0; margin: 1.5rem 0 0; list-style: none; max-width: 44rem; }
+  .options li { break-inside: avoid; padding: 0.55rem 0; border-bottom: 1px solid var(--rule); }
+  .options b { display: block; font-weight: 700; }
+  .options span { color: var(--muted); font-size: 0.95rem; }
+  @media (max-width: 52rem) {
+    .looks { grid-template-columns: repeat(3, 72%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 1rem; align-items: start; }
+    .looks figure { scroll-snap-align: start; }
+    .options { columns: 1; }
+  }
+
+  /* Command line */
+  .cli .wrap { max-width: 52rem; }
+
+  /* Get it */
+  .get { padding-bottom: clamp(4rem, 10vw, 7rem); }
+  .get .wrap { border-top: 1.5px solid var(--ink); padding-top: 3rem; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem 4rem; }
+  .facts { list-style: none; padding: 0; margin: 0; }
+  .facts li { padding: 0.6rem 0; border-bottom: 1px solid var(--rule); }
+  @media (max-width: 52rem) { .get .wrap { grid-template-columns: 1fr; } }
+
+  footer { padding: 2rem 0 3rem; font-size: 0.95rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="menubar" aria-hidden="true">
+  <div class="wrap">
+    <span class="items"><span class="app">Fiscal Quarter</span><span class="extra">File</span><span class="extra">Edit</span><span class="extra">View</span></span>
+    <span class="items"><span class="fq" data-fq="menubar">FY26-Q4 · 82d</span><span class="clock" data-fq="clock"></span></span>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-text">
+      <p class="today-line" data-fq="todayline">Today is in</p>
+      <h1 class="qid" data-fq="qid">FY26-Q4</h1>
+      <p class="lede"><span class="left" data-fq="leftphrase">82 days left</span> in the quarter. Fiscal Quarter keeps that in your menu bar.</p>
+      <p>A small Mac app, with widgets for the desktop and an iPhone app, for anyone whose work runs on quarters. It shows where you are in the quarter, how long is left, and when your customers' quarters end too.</p>
+      <div class="actions">
+        <a class="button" href="https://github.com/mrlynn/fq/releases/download/v1.4/FiscalQuarter-1.4.dmg">Download for Mac</a>
+        <a class="button quiet" href="https://github.com/mrlynn/fq">Source on GitHub</a>
+      </div>
+      <p class="fine">Version 1.4. Free, signed and notarized by Apple. macOS 13 or later; widgets need macOS 14.</p>
+    </div>
+    <img class="panel-shot" src="img/mac-panel.webp" width="748" height="1498"
+      alt="The Fiscal Quarter panel open from the menu bar, showing FY26-Q4, day 11 of 92, the year as a line of months with today marked in October, 82 days left, and two other company calendars.">
+  </div>
+</header>
+
+<div class="year" aria-label="This year, quarter by quarter">
+  <div class="wrap">
+    <div class="yearline" data-fq="yearline"></div>
+    <div class="yearcap"><span data-fq="progress">Day 11 of 92, week 2</span><span data-fq="percent">12% through the quarter</span></div>
+  </div>
+</div>
+
+<main>
+
+<section class="countdown" id="countdowns">
+  <div class="wrap">
+    <div>
+      <h2>Count down in the unit you think in.</h2>
+      <p>Days to the end of the quarter, the half, and the fiscal year. Or workdays, if you think in working weeks, or weekends, if you're planning around them. Click any countdown in the panel to put it in the menu bar instead.</p>
+      <p class="muted">The numbers here are live for today, using the built-in calendar.</p>
+    </div>
+    <div>
+      <div class="units" role="group" aria-label="Count in">
+        <button type="button" data-unit="days" aria-pressed="true">Days</button>
+        <button type="button" data-unit="workdays" aria-pressed="false">Workdays</button>
+        <button type="button" data-unit="weeks" aria-pressed="false">Weeks</button>
+        <button type="button" data-unit="weekends" aria-pressed="false">Weekends</button>
+      </div>
+      <div aria-live="polite">
+        <div class="big" data-fq="big">82</div>
+        <div class="big-unit" data-fq="bigunit">days left in the quarter</div>
+      </div>
+      <ul class="ends" data-fq="ends"></ul>
+    </div>
+  </div>
+</section>
+
+<section class="widgets" id="widgets">
+  <div class="wrap">
+    <h2>Widgets for the desktop and the Home Screen.</h2>
+    <p>Small and medium widgets on the Mac desktop and the iPhone Home Screen, plus three Lock Screen sizes on iPhone. The medium widget sets the quarter, the half, and the year side by side, because they start on different days even when they end together.</p>
+    <div class="phones">
+      <figure>
+        <div class="phone crop"><img src="img/ios-home-1.webp" width="720" height="1075" loading="lazy" alt="An iPhone Home Screen with a medium Fiscal Quarter widget: FY26-Q4, 82 days left, and bars for the quarter, half, and year."></div>
+        <figcaption>Your calendar, in the standard look.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone crop"><img src="img/ios-home-dusk.webp" width="720" height="1075" loading="lazy" alt="The same medium widget on a purple-to-pink gradient background."></div>
+        <figcaption>The same widget in the Dusk gradient.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone crop"><img src="img/ios-home-2.webp" width="720" height="1075" loading="lazy" alt="A small widget labelled Acme Corp showing FY27-Q2 and 82 days left."></div>
+        <figcaption>A small widget following a customer's calendar.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="calendars" id="calendars">
+  <div class="wrap">
+    <figure>
+      <div class="phone"><img src="img/ios-calendars.webp" width="720" height="1566" loading="lazy" alt="The iPhone app listing other calendars: Acme Corp, which starts July 1, in FY27-Q2, and Northpeak Labs, which starts April 1, in FY27-Q3."></div>
+    </figure>
+    <div>
+      <h2>Your customers' years don't start when yours does.</h2>
+      <p>Add the fiscal calendars of the companies you sell to or work with, by name and the day their year starts. The panel lists each one with its quarter and days left, and turns amber in their last two weeks, so you see their quarter end coming.</p>
+      <p>Calendars with a short transition year, or quarters that don't follow whole months, can be imported from a file.</p>
+<pre class="terminal" aria-label="Terminal output"><span class="cmd">fq --all</span>
+Yours           FY26-Q4 · Day 11 of 92 · week 2 · 82 days left
+Acme Corp       FY27-Q2 · Day 11 of 92 · week 2 · 82 days left
+Northpeak Labs  FY27-Q3 · Day 11 of 92 · week 2 · 82 days left</pre>
+    </div>
+  </div>
+</section>
+
+<section class="appearance" id="appearance">
+  <div class="wrap">
+    <h2>Make it look like yours.</h2>
+    <p>One look covers the app and every widget, and changes reach the widgets at once.</p>
+    <ul class="options">
+      <li><b>Background</b><span>The system's own, a color, one of six gradients, or a photo.</span></li>
+      <li><b>Type</b><span>Ten typefaces, the weight of the big number, and three text sizes.</span></li>
+      <li><b>Color</b><span>Light, dark, or automatic text, and your own accent.</span></li>
+      <li><b>What shows</b><span>Progress bars, end dates, the half and year rows, a centered number.</span></li>
+    </ul>
+    <div class="looks">
+      <figure>
+        <div class="mac-shot"><img src="img/mac-panel-dusk.webp" width="656" height="790" loading="lazy" alt="The Mac panel on a purple gradient background, showing FY26-Q4 and the year line."></div>
+        <figcaption>The Mac panel in Dusk.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone crop"><img src="img/ios-appearance-ocean.webp" width="720" height="1075" loading="lazy" alt="The Appearance screen on iPhone, with live previews of the medium and small widgets on a blue-green gradient, and the gradient presets below."></div>
+        <figcaption>Appearance previews both widget sizes as you choose.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone crop"><img src="img/ios-app-dusk.webp" width="720" height="1075" loading="lazy" alt="The iPhone app with its top card on a purple gradient."></div>
+        <figcaption>The iPhone app takes the same look.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="cli" id="command-line">
+  <div class="wrap">
+    <h2>The same answers in a shell.</h2>
+    <p>The app carries a command called <code>fq</code> that reads the same calendars. Use it in scripts, status bars, or a Slack message.</p>
+<pre class="terminal" aria-label="Terminal session"><span class="cmd">fq</span>
+FY26-Q4
+2026-10-01 – 2026-12-31
+Day 11 of 92 · week 2
+82 days left
+Next FY27-Q1 on 2027-01-01
+<span class="gap"></span><span class="cmd">fq --countdown</span>
+FY26-Q4 · H2 · FY26 ends 2026-12-31
+  82 days · 59 workdays · 12 weekends
+<span class="gap"></span><span class="cmd">fq --id</span>
+FY26-Q4</pre>
+    <p class="fine" style="margin-top:1rem">Output from 11 October 2026. <code>fq --json</code> prints all of it as one object.</p>
+  </div>
+</section>
+
+<section class="get" id="download">
+  <div class="wrap">
+    <div>
+      <h2>Get Fiscal Quarter.</h2>
+      <p>Download the disk image, drag the app to Applications, and open it. It's signed and notarized, so it opens like any other app.</p>
+      <div class="actions">
+        <a class="button" href="https://github.com/mrlynn/fq/releases/download/v1.4/FiscalQuarter-1.4.dmg">Download for Mac</a>
+        <a class="button quiet" href="https://github.com/mrlynn/fq/releases/latest">All releases</a>
+      </div>
+    </div>
+    <ul class="facts">
+      <li>Free and open source.</li>
+      <li>No account, and no network access.</li>
+      <li>macOS 13 or later. Widgets need macOS 14.</li>
+      <li>The iPhone and iPad app builds from the same repository.</li>
+      <li>The built-in fiscal year is the calendar year. Any other start date is one setting away.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">Made by <a href="https://mlynn.org">Michael Lynn</a>. Source on <a href="https://github.com/mrlynn/fq">GitHub</a>.</div>
+</footer>
+
+<script>
+(() => {
+  // The built-in calendar: the calendar year, numbered by that year.
+  const DAY = 86400000;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const y = today.getFullYear();
+  const q = Math.floor(today.getMonth() / 3);
+  const days = (a, b) => Math.round((b - a) / DAY);
+  const fy = n => "FY" + String(n % 100).padStart(2, "0");
+  const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmt = d => MONTHS[d.getMonth()] + " " + d.getDate();
+
+  const qStart = new Date(y, q * 3, 1);
+  const qEnd = new Date(y, q * 3 + 3, 0);
+  const length = days(qStart, qEnd) + 1;
+  const dayIndex = days(qStart, today) + 1;
+  const week = Math.ceil(dayIndex / 7);
+  const id = fy(y) + "-Q" + (q + 1);
+
+  // Time left from today through `end`, counting both, in each unit.
+  function left(end) {
+    const total = days(today, end) + 1;
+    let workdays = Math.floor(total / 7) * 5;
+    let wd = today.getDay();
+    for (let i = 0; i < total % 7; i++) { if (wd !== 0 && wd !== 6) workdays++; wd = (wd + 1) % 7; }
+    const untilSat = (6 - today.getDay() + 7) % 7;
+    const weekends = (untilSat < total ? Math.floor((total - 1 - untilSat) / 7) + 1 : 0) + (today.getDay() === 0 ? 1 : 0);
+    return { days: total, workdays, weekends, weeks: [Math.floor(total / 7), total % 7] };
+  }
+  const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+  function phrase(l, unit) {
+    if (unit === "weeks") {
+      const [w, d] = l.weeks;
+      return w === 0 ? plural(d, "day") : d === 0 ? plural(w, "week") : plural(w, "week") + " " + plural(d, "day");
+    }
+    return plural(l[unit], unit.slice(0, -1));
+  }
+
+  const set = (key, text) => document.querySelectorAll('[data-fq="' + key + '"]').forEach(el => el.textContent = text);
+  const quarterLeft = left(qEnd);
+  const soon = quarterLeft.days <= 14;
+
+  set("qid", id);
+  set("menubar", id + " · " + quarterLeft.days + "d");
+  set("todayline", "Today, " + today.toLocaleDateString(undefined, { day: "numeric", month: "long" }) + ", is in");
+  set("leftphrase", plural(quarterLeft.days, "day") + " left");
+  document.querySelector('[data-fq="leftphrase"]').classList.toggle("soon", soon);
+  set("progress", "Day " + dayIndex + " of " + length + ", week " + week);
+  set("percent", Math.round(dayIndex / length * 100) + "% through the quarter");
+  set("clock", now.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }));
+
+  // The year line, as the app draws it: past months filled, today ringed, this quarter highlighted.
+  const line = document.querySelector('[data-fq="yearline"]');
+  line.innerHTML = "";
+  let i = 0;
+  for (let qi = 0; qi < 4; qi++) {
+    const qEl = document.createElement("div");
+    qEl.className = "quarter" + (qi === q ? " now" : "");
+    let qDays = 0;
+    const months = document.createElement("div");
+    months.className = "months";
+    for (let m = qi * 3; m < qi * 3 + 3; m++, i++) {
+      const start = new Date(y, m, 1), end = new Date(y, m + 1, 0);
+      const len = end.getDate();
+      qDays += len;
+      const filled = today > end ? 1 : today < start ? 0 : (today.getDate() - 0.5) / len;
+      const mEl = document.createElement("div");
+      mEl.className = "month" + (m === today.getMonth() ? " now" : "");
+      mEl.style.flex = len + " 1 0";
+      mEl.innerHTML = '<div class="bar"><div class="fill" style="width:' + (filled * 100) + '%;--i:' + i + '"></div>' +
+        (m === today.getMonth() ? '<div class="ring" style="left:' + (filled * 100) + '%;--i:' + i + '"></div>' : "") +
+        '</div><div class="mname">' + MONTHS[m] + '</div>';
+      if (filled === 0) mEl.querySelector(".fill").remove();
+      months.appendChild(mEl);
+    }
+    qEl.style.flex = qDays + " 1 0";
+    qEl.innerHTML = '<div class="qname">Q' + (qi + 1) + '</div>';
+    qEl.appendChild(months);
+    line.appendChild(qEl);
+  }
+
+  // Countdowns to the end of the quarter, the half, and the year.
+  const half = q < 2 ? 0 : 1;
+  const targets = [
+    { label: id, end: qEnd },
+    { label: fy(y) + "-H" + (half + 1), end: new Date(y, half * 6 + 6, 0) },
+    { label: fy(y), end: new Date(y, 12, 0) },
+  ].map(t => ({ ...t, left: left(t.end) }));
+
+  const unitWords = { days: "left in the quarter", workdays: "left in the quarter", weeks: "left in the quarter", weekends: "left in the quarter" };
+  function render(unit) {
+    const l = targets[0].left;
+    if (unit === "weeks") {
+      const [w, d] = l.weeks;
+      set("big", w + "w " + d + "d");
+    } else {
+      set("big", String(l[unit]));
+    }
+    const noun = unit === "weeks" ? "" : (l[unit] === 1 ? unit.slice(0, -1) : unit) + " ";
+    set("bigunit", noun + unitWords[unit]);
+    const list = document.querySelector('[data-fq="ends"]');
+    list.innerHTML = targets.map(t =>
+      '<li><span><b>' + t.label + '</b> <span class="when">ends ' + fmt(t.end) + '</span></span>' +
+      '<span class="count' + (t.left.days <= 14 ? ' soon' : '') + '">' + phrase(t.left, unit) + '</span></li>'
+    ).join("");
+    document.querySelectorAll(".units button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.unit === unit)));
+  }
+  document.querySelectorAll(".units button").forEach(b => b.addEventListener("click", () => render(b.dataset.unit)));
+  render("days");
+})();
+</script>
+</body>
+</html>
