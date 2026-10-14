@@ -479,6 +479,7 @@
 Yours           FY26-Q4 · Day 11 of 92 · week 2 · 82 days left
 Acme Corp       FY27-Q2 · Day 11 of 92 · week 2 · 82 days left
 Northpeak Labs  FY27-Q3 · Day 11 of 92 · week 2 · 82 days left</pre>
+      <p style="margin-top:1.25rem">Siri and Shortcuts know them too. Run <b>Get Fiscal Quarter</b> on Acme Corp and it answers, “<span data-fq="acme">For Acme Corp, it's FY27-Q2, day 11 of 92, with 82 days left.</span>” <a href="#shortcuts">More on Shortcuts</a></p>
     </div>
   </div>
 </section>
@@ -929,6 +930,12 @@ FY26-Q4</pre>
     return '<li class="banner"><img src="apple-touch-icon.png" alt=""><span><span class="top"><span class="app">Fiscal Quarter</span><span>' + when +
       '</span></span><span class="title">' + n.title + '</span><span class="body">' + n.body + '</span></span></li>';
   }).join("");
+
+  // Acme Corp's year starts on 1 July, so its quarters line up with the calendar's and only the names differ.
+  const acmeYear = today.getMonth() >= 6 ? y + 1 : y;
+  const acmeQuarter = Math.floor(((today.getMonth() - 6 + 12) % 12) / 3) + 1;
+  set("acme", "For Acme Corp, it's " + fy(acmeYear) + "-Q" + acmeQuarter + ", day " + dayIndex + " of " + length +
+    ", with " + plural(quarterLeft.days, "day") + " left.");
 
   // What Siri says back, in the app's own words, for today.
   const short = d => DOW[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
