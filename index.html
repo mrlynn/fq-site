@@ -202,6 +202,8 @@
   .asks .ask::before { content: "\201C"; }
   .asks .ask::after { content: "\201D"; }
   .asks .answer { display: block; margin-top: 0.25rem; color: var(--muted); }
+  .siri figure img { width: 100%; border-radius: 1.2rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); }
+  .siri figure { margin-bottom: 1.75rem; }
   .actions-list { padding-left: 1.2rem; margin: 0 0 1rem; }
   .actions-list li { margin: 0.2rem 0; }
   @media (max-width: 52rem) { .siri .wrap { grid-template-columns: 1fr; } }
@@ -424,7 +426,13 @@ Northpeak Labs  FY27-Q3 · Day 11 of 92 · week 2 · 82 days left</pre>
       </ul>
       <p class="muted">Name a document for the quarter, put the days left in a status message, or set a reminder for the next forecast. The answers here are live for today.</p>
     </div>
-    <ul class="asks" data-fq="asks" aria-label="Things to ask Siri"></ul>
+    <div>
+      <figure>
+        <img src="img/ios-siri-answer.webp" width="720" height="384" loading="lazy" alt="Fiscal Quarter's answer card on iPhone: It's FY26-Q4, day 14 of 92, with 79 days left.">
+        <figcaption>“What quarter is it in Fiscal Quarter,” asked from Spotlight on iPhone.</figcaption>
+      </figure>
+      <ul class="asks" data-fq="asks" aria-label="Things to ask Siri"></ul>
+    </div>
   </div>
 </section>
 
