@@ -224,6 +224,23 @@
   .weeks .periods { margin-top: 1rem; }
   @media (max-width: 52rem) { .weeks .wrap { grid-template-columns: 1fr; } }
 
+  /* Notifications */
+  .notify .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
+  .banners { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+  .banner {
+    display: grid; grid-template-columns: 2.4rem 1fr; gap: 0.75rem; align-items: start;
+    padding: 0.85rem 1rem; border-radius: 1.1rem; background: var(--paper-deep);
+    box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.08), 0 10px 24px -14px rgba(14, 42, 35, 0.35);
+  }
+  .banner img { width: 2.4rem; height: 2.4rem; border-radius: 0.6rem; }
+  .banner .top { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+  .banner .top .app { text-transform: uppercase; font-weight: 600; }
+  .banner .title { display: block; font-weight: 700; margin-top: 0.1rem; }
+  .banner .body { display: block; color: var(--muted); font-size: 0.95rem; }
+  .notify .kinds { padding-left: 1.2rem; margin: 0 0 1rem; }
+  .notify .kinds li { margin: 0.2rem 0; }
+  @media (max-width: 52rem) { .notify .wrap { grid-template-columns: 1fr; } }
+
   /* Siri and Shortcuts */
   .siri .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
   .asks { list-style: none; padding: 0; margin: 0.5rem 0 0; border-top: 1.5px solid var(--ink); }
@@ -397,6 +414,24 @@
       </figure>
     </div>
     <ul class="ends" data-fq="milestones" aria-label="Example milestones"></ul>
+  </div>
+</section>
+
+<section class="notify" id="notifications">
+  <div class="wrap">
+    <div>
+      <h2>A nudge before the date, not after.</h2>
+      <p>Turn on any of four notifications. They're all off until you do.</p>
+      <ul class="kinds">
+        <li><b>Milestones</b>, on the day or 1, 2, or 5 workdays ahead, set for each one</li>
+        <li><b>The last two weeks of the quarter</b>, the day the countdown turns amber</li>
+        <li><b>The first day of a quarter</b></li>
+        <li><b>30 days before the fiscal year ends</b></li>
+      </ul>
+      <p>They come at 9:00, or the time you choose, and follow your calendar and holidays. The Mac app plans a month ahead and plans again whenever a milestone, a setting, or the date changes. It opens at login, so the plan stays current. The iPhone app plans each time it opens.</p>
+      <p class="muted">The next of each kind, worked out live for today, with the milestones above.</p>
+    </div>
+    <ul class="banners" data-fq="banners" aria-label="The next notifications"></ul>
   </div>
 </section>
 
@@ -865,6 +900,35 @@ FY26-Q4</pre>
   const rulePicker = document.getElementById("week-rule");
   rulePicker.addEventListener("change", () => renderWeeks(rulePicker.value));
   renderWeeks(rulePicker.value);
+
+  // The next notification of each kind, in the app's own words. Each is sent at 9:00 on its day.
+  const weekdaysBetween = (a, b) => { let n = 0; for (let d = a; d <= b; d = shiftDays(d, 1)) if (!weekend(d)) n++; return n; };
+  const quarterOf = d => { const qi = Math.floor(d.getMonth() / 3); return { id: fy(d.getFullYear()) + "-Q" + (qi + 1), start: new Date(d.getFullYear(), qi * 3, 1), end: new Date(d.getFullYear(), qi * 3 + 3, 0) }; };
+  const shortDay = d => DOW[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
+  const notes = [];
+  if (upcoming[0]) {
+    const m = upcoming[0];
+    const rule = m.only ? m.rule : m.rule + ", every quarter";
+    notes.push({ date: m.date, title: m.name + " today", body: rule.charAt(0).toUpperCase() + rule.slice(1) + " · " + quarterOf(m.date).id });
+  }
+  let twoWeeks = shiftDays(qEnd, -13), twoWeeksQuarter = quarterOf(today);
+  if (twoWeeks < today) { twoWeeksQuarter = quarterOf(shiftDays(qEnd, 1)); twoWeeks = shiftDays(twoWeeksQuarter.end, -13); }
+  notes.push({ date: twoWeeks, title: "Two weeks left in " + twoWeeksQuarter.id,
+    body: weekdaysBetween(twoWeeks, twoWeeksQuarter.end) + " workdays to " + shortDay(twoWeeksQuarter.end) + "." });
+  const nextQuarter = quarterOf(shiftDays(qEnd, 1));
+  notes.push({ date: nextQuarter.start, title: nextQuarter.id + " starts today",
+    body: (days(nextQuarter.start, nextQuarter.end) + 1) + " days, through " + shortDay(nextQuarter.end) + "." });
+  let yearEnd30 = shiftDays(new Date(y, 11, 31), -29), endOfYear = new Date(y, 11, 31);
+  if (yearEnd30 < today) { endOfYear = new Date(y + 1, 11, 31); yearEnd30 = shiftDays(endOfYear, -29); }
+  notes.push({ date: yearEnd30, title: "30 days left in " + fy(endOfYear.getFullYear()),
+    body: weekdaysBetween(yearEnd30, endOfYear) + " workdays to " + shortDay(endOfYear) + "." });
+  notes.sort((a, b) => a.date - b.date);
+  document.querySelector('[data-fq="banners"]').innerHTML = notes.map(n => {
+    const away = days(today, n.date);
+    const when = away === 0 ? "Today, 9:00" : away === 1 ? "Tomorrow, 9:00" : shortDay(n.date) + ", 9:00";
+    return '<li class="banner"><img src="apple-touch-icon.png" alt=""><span><span class="top"><span class="app">Fiscal Quarter</span><span>' + when +
+      '</span></span><span class="title">' + n.title + '</span><span class="body">' + n.body + '</span></span></li>';
+  }).join("");
 
   // What Siri says back, in the app's own words, for today.
   const short = d => DOW[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
