@@ -192,6 +192,8 @@
   .milestones .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
   .milestones .ends { margin-top: 0.5rem; }
   .milestones .ends .when { display: block; margin-top: 0.15rem; }
+  .milestones figure { margin-top: 2rem; max-width: 360px; }
+  .milestones figure img { width: 100%; border-radius: 1.4rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); }
   @media (max-width: 52rem) { .milestones .wrap { grid-template-columns: 1fr; } }
 
   /* Siri and Shortcuts */
@@ -333,6 +335,10 @@
       <p>Add the dates that come around each quarter: a forecast due five workdays before quarter end, a pipeline review two weeks in, a plan that's only due in Q4. Fiscal Quarter works out the day in every quarter, moves it off a weekend, and counts it down beside the quarter. Put one in the menu bar if it's the date you're watching.</p>
       <p>Turn on notifications to hear about a milestone on the day or a few workdays ahead. You can also be told when the quarter's last two weeks begin, when a new quarter starts, and 30 days before the year ends.</p>
       <p class="muted">These three are examples, worked out live for today.</p>
+      <figure>
+        <img src="img/mac-widget-milestone.webp" width="720" height="360" loading="lazy" alt="The medium Fiscal Quarter widget counting down to a milestone: Forecast due, 72 days left, due Dec 24, beside bars for the quarter, half, and year.">
+        <figcaption>A widget can count down to a milestone, with the quarter, half, and year beside it.</figcaption>
+      </figure>
     </div>
     <ul class="ends" data-fq="milestones" aria-label="Example milestones"></ul>
   </div>
