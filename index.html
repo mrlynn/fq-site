@@ -194,6 +194,18 @@
   .milestones .ends .when { display: block; margin-top: 0.15rem; }
   @media (max-width: 52rem) { .milestones .wrap { grid-template-columns: 1fr; } }
 
+  /* Siri and Shortcuts */
+  .siri .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
+  .asks { list-style: none; padding: 0; margin: 0.5rem 0 0; border-top: 1.5px solid var(--ink); }
+  .asks li { padding: 0.9rem 0; border-bottom: 1px solid var(--rule); }
+  .asks .ask { font-weight: 700; }
+  .asks .ask::before { content: "\201C"; }
+  .asks .ask::after { content: "\201D"; }
+  .asks .answer { display: block; margin-top: 0.25rem; color: var(--muted); }
+  .actions-list { padding-left: 1.2rem; margin: 0 0 1rem; }
+  .actions-list li { margin: 0.2rem 0; }
+  @media (max-width: 52rem) { .siri .wrap { grid-template-columns: 1fr; } }
+
   /* Phones */
   .phone { border-radius: 2.6rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); background: #000; overflow: hidden; }
   .phone img { width: 100%; }
@@ -399,6 +411,23 @@ Northpeak Labs  FY27-Q3 · Day 11 of 92 · week 2 · 82 days left</pre>
   </div>
 </section>
 
+<section class="siri" id="shortcuts">
+  <div class="wrap">
+    <div>
+      <h2>Ask Siri, or build it into a shortcut.</h2>
+      <p>Fiscal Quarter answers Siri and Spotlight on the Mac and iPhone with no setup, using your calendar, holidays, and milestones. In the Shortcuts app it adds four actions you can build on:</p>
+      <ul class="actions-list">
+        <li><b>Get Fiscal Quarter</b>, such as FY26-Q4, for yours or a saved calendar</li>
+        <li><b>Get Time Left</b> in the quarter, half, or year, in days, workdays, weeks, or weekends</li>
+        <li><b>Get Fiscal Quarter for Date</b>, for any day</li>
+        <li><b>Get Next Milestone</b>, as a date</li>
+      </ul>
+      <p class="muted">Name a document for the quarter, put the days left in a status message, or set a reminder for the next forecast. The answers here are live for today.</p>
+    </div>
+    <ul class="asks" data-fq="asks" aria-label="Things to ask Siri"></ul>
+  </div>
+</section>
+
 <section class="cli" id="command-line">
   <div class="wrap">
     <h2>The same answers in a shell.</h2>
@@ -594,6 +623,27 @@ FY26-Q4</pre>
   }
   document.querySelectorAll(".units button").forEach(b => b.addEventListener("click", () => render(b.dataset.unit)));
   render("days");
+
+  // What Siri says back, in the app's own words, for today.
+  const short = d => DOW[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
+  const next = upcoming[0];
+  const away = next ? days(today, next.date) : 0;
+  const asks = [
+    ["What quarter is it in Fiscal Quarter",
+      "It's " + id + ", day " + dayIndex + " of " + length + ", with " + plural(quarterLeft.days, "day") + " left."],
+    ["How long is left in Fiscal Quarter",
+      quarterLeft.days === 1 ? id + " ends today." : plural(quarterLeft.days, "day") + " left in " + id + ", through " + short(qEnd) + "."],
+  ];
+  if (next) {
+    asks.push(["When is my next milestone in Fiscal Quarter",
+      away === 0 ? next.name + " is today." :
+      away === 1 ? next.name + " is tomorrow, " + short(next.date) + "." :
+      next.name + " is " + short(next.date) + ", " + away + " days away."]);
+  }
+  const askList = document.querySelector('[data-fq="asks"]');
+  askList.innerHTML = asks.map(([ask, answer]) =>
+    '<li><span class="ask">' + ask + '</span><span class="answer">' + answer + '</span></li>'
+  ).join("");
 })();
 </script>
 </body>
