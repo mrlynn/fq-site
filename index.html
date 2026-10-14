@@ -196,6 +196,19 @@
   .milestones figure img { width: 100%; border-radius: 1.4rem; box-shadow: 0 0 0 1px rgba(14, 42, 35, 0.12), var(--shadow); }
   @media (max-width: 52rem) { .milestones .wrap { grid-template-columns: 1fr; } }
 
+  /* Holidays */
+  .holidays .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
+  .holidays label { display: block; font-weight: 600; margin: 1.5rem 0 0.4rem; }
+  .holidays select {
+    font: inherit; font-size: 1rem; color: var(--ink); background: var(--paper-deep);
+    border: 1px solid var(--rule); border-radius: 0.6rem; padding: 0.55rem 0.8rem; max-width: 100%;
+  }
+  .holidays .tally { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 0 0 1.5rem; }
+  .holidays .tally div { border-top: 1.5px solid var(--ink); padding-top: 0.6rem; }
+  .holidays .tally b { display: block; font-size: clamp(2.2rem, 5vw, 3rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .holidays .tally span { color: var(--muted); font-size: 0.95rem; }
+  @media (max-width: 52rem) { .holidays .wrap { grid-template-columns: 1fr; } }
+
   /* Siri and Shortcuts */
   .siri .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 6vw, 6rem); align-items: start; }
   .asks { list-style: none; padding: 0; margin: 0.5rem 0 0; border-top: 1.5px solid var(--ink); }
@@ -324,6 +337,34 @@
         <div class="big-unit" data-fq="bigunit">days left in the quarter</div>
       </div>
       <ul class="ends" data-fq="ends"></ul>
+    </div>
+  </div>
+</section>
+
+<section class="holidays" id="holidays">
+  <div class="wrap">
+    <div>
+      <h2>Workdays that know about holidays.</h2>
+      <p>Choose a country and every workday count skips its public holidays: the countdowns, the widgets, milestones counted in workdays, and how far ahead a notification comes. Add your own days off too, such as a company shutdown.</p>
+      <p>Holidays are worked out by rule for any year, with no network. A holiday on a weekend is kept the way each country keeps it: the Friday before in the United States, the next free weekday in the United Kingdom.</p>
+      <label for="holiday-country">Try a country</label>
+      <select id="holiday-country">
+        <option value="us">United States (federal)</option>
+        <option value="ca">Canada (federal)</option>
+        <option value="uk">United Kingdom (England and Wales)</option>
+        <option value="ie">Ireland</option>
+        <option value="au">Australia (national)</option>
+        <option value="de">Germany (national)</option>
+        <option value="fr">France</option>
+      </select>
+      <p class="muted" style="margin-top:1rem">National holidays only. Add a regional one as a day off.</p>
+    </div>
+    <div aria-live="polite">
+      <div class="tally">
+        <div><b data-fq="weekdays">58</b><span>weekdays left in <span data-fq="hqid" style="white-space:nowrap">the quarter</span></span></div>
+        <div><b data-fq="workdays">55</b><span>workdays, less holidays</span></div>
+      </div>
+      <ul class="ends" data-fq="holidays" aria-label="The next public holidays"></ul>
     </div>
   </div>
 </section>
@@ -637,6 +678,92 @@ FY26-Q4</pre>
   }
   document.querySelectorAll(".units button").forEach(b => b.addEventListener("click", () => render(b.dataset.unit)));
   render("days");
+
+  // Public holidays, by the same rules as the app: worked out for any year, observed the way each country keeps them.
+  const dayOf = (yy, mm, dd) => new Date(yy, mm - 1, dd);
+  const shiftDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const weekend = d => d.getDay() === 0 || d.getDay() === 6;
+  function easter(yy) {
+    const a = yy % 19, b = Math.floor(yy / 100), c = yy % 100, d = Math.floor(b / 4), e = b % 4;
+    const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const n = h + l - 7 * m + 114;
+    return dayOf(yy, Math.floor(n / 31), n % 31 + 1);
+  }
+  // Weekdays: Sunday is 0, as in JavaScript.
+  const nth = (n, wd, mm, yy) => { const first = dayOf(yy, mm, 1); return shiftDays(first, (wd - first.getDay() + 7) % 7 + (n - 1) * 7); };
+  const lastOf = (wd, mm, yy) => { const end = dayOf(yy, mm + 1, 0); return shiftDays(end, -((end.getDay() - wd + 7) % 7)); };
+  const mondayBefore = d => { const back = (d.getDay() - 1 + 7) % 7; return shiftDays(d, -(back === 0 ? 7 : back)); };
+  const nearestWeekday = d => d.getDay() === 6 ? shiftDays(d, -1) : d.getDay() === 0 ? shiftDays(d, 1) : d;
+  function forward(list) {
+    const taken = new Set(); const out = [];
+    for (const [name, date] of list.sort((p, q) => p[1] - q[1])) {
+      let d = date;
+      if (weekend(d)) { while (weekend(d) || taken.has(+d)) d = shiftDays(d, 1); }
+      taken.add(+d); out.push([name, d]);
+    }
+    return out;
+  }
+  function holidaysIn(country, yy) {
+    const e = easter(yy), ez = n => shiftDays(e, n), on = (mm, dd) => dayOf(yy, mm, dd);
+    switch (country) {
+      case "us": return [
+        ["New Year's Day", nearestWeekday(on(1, 1))], ["Martin Luther King Jr. Day", nth(3, 1, 1, yy)],
+        ["Washington's Birthday", nth(3, 1, 2, yy)], ["Memorial Day", lastOf(1, 5, yy)],
+        ["Juneteenth", nearestWeekday(on(6, 19))], ["Independence Day", nearestWeekday(on(7, 4))],
+        ["Labor Day", nth(1, 1, 9, yy)], ["Columbus Day", nth(2, 1, 10, yy)],
+        ["Veterans Day", nearestWeekday(on(11, 11))], ["Thanksgiving", nth(4, 4, 11, yy)],
+        ["Christmas Day", nearestWeekday(on(12, 25))]];
+      case "ca": return forward([
+        ["New Year's Day", on(1, 1)], ["Good Friday", ez(-2)], ["Victoria Day", mondayBefore(on(5, 25))],
+        ["Canada Day", on(7, 1)], ["Labour Day", nth(1, 1, 9, yy)], ["National Day for Truth and Reconciliation", on(9, 30)],
+        ["Thanksgiving", nth(2, 1, 10, yy)], ["Remembrance Day", on(11, 11)], ["Christmas Day", on(12, 25)], ["Boxing Day", on(12, 26)]]);
+      case "uk": return forward([
+        ["New Year's Day", on(1, 1)], ["Good Friday", ez(-2)], ["Easter Monday", ez(1)],
+        ["Early May bank holiday", nth(1, 1, 5, yy)], ["Spring bank holiday", lastOf(1, 5, yy)],
+        ["Summer bank holiday", lastOf(1, 8, yy)], ["Christmas Day", on(12, 25)], ["Boxing Day", on(12, 26)]]);
+      case "ie": {
+        const list = [["New Year's Day", on(1, 1)]];
+        if (yy >= 2023) list.push(["St Brigid's Day", on(2, 1).getDay() === 5 ? on(2, 1) : nth(1, 1, 2, yy)]);
+        return forward(list.concat([
+          ["St Patrick's Day", on(3, 17)], ["Easter Monday", ez(1)], ["May bank holiday", nth(1, 1, 5, yy)],
+          ["June bank holiday", nth(1, 1, 6, yy)], ["August bank holiday", nth(1, 1, 8, yy)],
+          ["October bank holiday", lastOf(1, 10, yy)], ["Christmas Day", on(12, 25)], ["St Stephen's Day", on(12, 26)]]));
+      }
+      case "au": return forward([
+        ["New Year's Day", on(1, 1)], ["Australia Day", on(1, 26)], ["Good Friday", ez(-2)], ["Easter Monday", ez(1)],
+        ["Christmas Day", on(12, 25)], ["Boxing Day", on(12, 26)]]).concat([["Anzac Day", on(4, 25)]]);
+      case "de": return [
+        ["New Year's Day", on(1, 1)], ["Good Friday", ez(-2)], ["Easter Monday", ez(1)], ["Labour Day", on(5, 1)],
+        ["Ascension Day", ez(39)], ["Whit Monday", ez(50)], ["German Unity Day", on(10, 3)],
+        ["Christmas Day", on(12, 25)], ["Second Day of Christmas", on(12, 26)]];
+      case "fr": return [
+        ["New Year's Day", on(1, 1)], ["Easter Monday", ez(1)], ["Labour Day", on(5, 1)], ["Victory in Europe Day", on(5, 8)],
+        ["Ascension Day", ez(39)], ["Whit Monday", ez(50)], ["Bastille Day", on(7, 14)], ["Assumption", on(8, 15)],
+        ["All Saints' Day", on(11, 1)], ["Armistice Day", on(11, 11)], ["Christmas Day", on(12, 25)]];
+    }
+    return [];
+  }
+  function renderHolidays(country) {
+    const all = [y - 1, y, y + 1, y + 2].flatMap(yy => holidaysIn(country, yy)).sort((p, q) => p[1] - q[1]);
+    const inQuarter = new Set(all.filter(([, d]) => d >= today && d <= qEnd && !weekend(d)).map(([, d]) => +d));
+    set("weekdays", String(quarterLeft.workdays));
+    set("workdays", String(quarterLeft.workdays - inQuarter.size));
+    set("hqid", id);
+    const next = all.filter(([, d]) => d >= today).slice(0, 4);
+    document.querySelector('[data-fq="holidays"]').innerHTML = next.map(([name, d]) => {
+      const away = days(today, d);
+      const when = away === 0 ? "today" : away === 1 ? "tomorrow" : "in " + away + " days";
+      return '<li><span><b>' + name + '</b> <span class="when">' + DOW[d.getDay()] + ', ' + fmt(d) + '</span></span><span class="count">' + when + '</span></li>';
+    }).join("");
+  }
+  const countryPicker = document.getElementById("holiday-country");
+  // Start with the visitor's own country when it is one of the seven.
+  const region = (navigator.language || "").split("-")[1];
+  const guess = { US: "us", CA: "ca", GB: "uk", IE: "ie", AU: "au", DE: "de", FR: "fr" }[region];
+  if (guess) countryPicker.value = guess;
+  countryPicker.addEventListener("change", () => renderHolidays(countryPicker.value));
+  renderHolidays(countryPicker.value);
 
   // What Siri says back, in the app's own words, for today.
   const short = d => DOW[d.getDay()] + " " + d.getDate() + " " + MONTHS[d.getMonth()];
